@@ -2,8 +2,8 @@
 # DBTITLE 1,02_gold_personal - Spark SQL KPIs & Aggregations for Lakeview Dashboard
 import pyspark.sql.functions as F
 
-# 1. Tạo Database cho tầng Gold
-spark.sql("CREATE DATABASE IF NOT EXISTS spotify_gold")
+# 1. Tạo Database cho tầng Gold (LOCATION tại /tmp/ cho Serverless Compute)
+spark.sql("CREATE DATABASE IF NOT EXISTS spotify_gold LOCATION '/tmp/spotify_gold'")
 
 # ==============================================================================
 # 2. GOLD TABLE 1: TOP BÀI HÁT NGHE NHIỀU NHẤT & TỔNG SỐ PHÚT NGHE

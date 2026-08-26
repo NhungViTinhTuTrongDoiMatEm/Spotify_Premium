@@ -4,8 +4,8 @@ import pyspark.sql.functions as F
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, BooleanType, TimestampType
 from delta.tables import DeltaTable
 
-# 1. Thiết lập Database Schema cho tầng Silver
-spark.sql("CREATE DATABASE IF NOT EXISTS spotify_silver")
+# 1. Thiết lập Database Schema cho tầng Silver (LOCATION tại /tmp/ cho Serverless Compute)
+spark.sql("CREATE DATABASE IF NOT EXISTS spotify_silver LOCATION '/tmp/spotify_silver'")
 
 # 2. Đọc toàn bộ các file JSON thô Bronze từ DBFS
 bronze_path = "dbfs:/FileStore/spotify/bronze_raw/personal_*.json"
