@@ -1,0 +1,22 @@
+# Python temporary & environment
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Environment variables & Sensitive Credentials
+.env
+*.env
+config/credentials.json
+*.secret
+
+# IDE settings
+.vscode/
+.idea/
+
+# Local data & logs
+*.log
+data/
