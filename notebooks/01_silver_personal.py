@@ -60,7 +60,7 @@ dim_tracks_df = df_flattened.select(
 
 dim_tracks_table_name = "spotify_silver.dim_tracks"
 
-if not spark._jsparkSession.catalog().tableExists(dim_tracks_table_name):
+if not spark.catalog.tableExists(dim_tracks_table_name):
     dim_tracks_df.write.format("delta").mode("overwrite").saveAsTable(dim_tracks_table_name)
     print("✅ Đã khởi tạo bảng Silver: spotify_silver.dim_tracks")
 else:
@@ -77,7 +77,7 @@ else:
 dim_artists_df = df_flattened.select("artist_id", "artist_name").dropDuplicates(["artist_id"])
 dim_artists_table_name = "spotify_silver.dim_artists"
 
-if not spark._jsparkSession.catalog().tableExists(dim_artists_table_name):
+if not spark.catalog.tableExists(dim_artists_table_name):
     dim_artists_df.write.format("delta").mode("overwrite").saveAsTable(dim_artists_table_name)
     print("✅ Đã khởi tạo bảng Silver: spotify_silver.dim_artists")
 else:
@@ -97,7 +97,7 @@ fact_streams_df = df_flattened.select(
 
 fact_streams_table_name = "spotify_silver.fact_streams"
 
-if not spark._jsparkSession.catalog().tableExists(fact_streams_table_name):
+if not spark.catalog.tableExists(fact_streams_table_name):
     fact_streams_df.write.format("delta").mode("overwrite").saveAsTable(fact_streams_table_name)
     print("✅ Đã khởi tạo bảng Silver Fact: spotify_silver.fact_streams")
 else:
