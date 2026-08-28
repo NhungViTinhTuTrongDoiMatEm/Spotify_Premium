@@ -6,7 +6,8 @@ from delta.tables import DeltaTable
 # 1. Thiết lập Database Schema cho tầng Silver (LOCATION tại /tmp/ cho Serverless Compute)
 spark.sql("CREATE DATABASE IF NOT EXISTS spotify_silver LOCATION '/tmp/spotify_silver'")
 
-# 2. Đọc toàn bộ các file JSON thô Bronze từ Workspace Files hoặc DBFS
+# COMMAND ----------
+# DBTITLE 1,02. Đọc toàn bộ các file JSON thô Bronze từ Workspace Files hoặc DBFS
 try:
     bronze_path = "/Workspace/spotify_raw/personal_*.json"
     df_raw = spark.read.option("multiline", "true").json(bronze_path)
@@ -20,13 +21,15 @@ except Exception:
         print(f"⚠️ Không đọc được dữ liệu Bronze từ Workspace/DBFS. Lỗi: {e}")
         dbutils.notebook.exit("No raw data found")
 
-# 3. Unnest mảng JSON 'items' chứa thông tin các bài hát vừa nghe
+# COMMAND ----------
+# DBTITLE 1,03. Unnest mảng JSON 'items' chứa thông tin các bài hát vừa nghe
 df_exploded = df_raw.select(
     F.explode("items").alias("item"),
     F.col("ingestion_metadata.ingestion_time").alias("ingestion_time")
 )
 
-# 4. Trích xuất các trường dữ liệu phẳng (Flattening fields) - Đã bỏ popularity và context_type
+# COMMAND ----------
+# DBTITLE 1,04. Trích xuất các trường dữ liệu phẳng (Flattening fields)
 df_flattened = df_exploded.select(
     F.to_timestamp(F.col("item.played_at")).alias("played_at"),
     F.col("item.track.id").alias("track_id"),
@@ -50,9 +53,8 @@ df_flattened = df_exploded.select(
     "ingestion_time"
 )
 
-# ==============================================================================
-# 5. UPSERT (MERGE INTO) VÀO BẢNG DIM_TRACKS
-# ==============================================================================
+# COMMAND ----------
+# DBTITLE 1,05. UPSERT (MERGE INTO) VÀO BẢNG DIM_TRACKS
 dim_tracks_df = df_flattened.select(
     "track_id", "track_name", "duration_ms", "explicit", "album_id"
 ).dropDuplicates(["track_id"])
@@ -71,15 +73,14 @@ else:
     ).whenMatchedUpdateAll().whenNotMatchedInsertAll().execute()
     print("🔄 Đã MERGE INTO (Upsert) bảng: spotify_silver.dim_tracks")
 
-# ==============================================================================
-# 6. UPSERT (MERGE INTO) VÀO BẢNG DIM_ARTISTS
-# ==============================================================================
+# COMMAND ----------
+# DBTITLE 1,06. UPSERT (MERGE INTO) VÀO BẢNG DIM_ARTISTS
 dim_artists_df = df_flattened.select("artist_id", "artist_name").dropDuplicates(["artist_id"])
 dim_artists_table_name = "spotify_silver.dim_artists"
 dim_artists_path = "/tmp/spotify_silver/dim_artists"
 
 if not spark.catalog.tableExists(dim_artists_table_name):
-    dim_artists_df.write.format("delta").mode("overwrite").option("path", dim_artists_path).saveAsTable(dim_artists_table_name)
+    dim_artists_df.write.format("delta").mode("overwrite").option("path", dim_artists_path).saveAsTable(dim_artists_path)
     print("✅ Đã khởi tạo bảng Silver: spotify_silver.dim_artists")
 else:
     delta_artists = DeltaTable.forName(spark, dim_artists_table_name)
@@ -89,9 +90,8 @@ else:
     ).whenMatchedUpdateAll().whenNotMatchedInsertAll().execute()
     print("🔄 Đã MERGE INTO (Upsert) bảng: spotify_silver.dim_artists")
 
-# ==============================================================================
-# 7. MERGE INTO VÀO BẢNG FACT_STREAMS (Khử trùng lặp theo played_at + track_id)
-# ==============================================================================
+# COMMAND ----------
+# DBTITLE 1,07. MERGE INTO VÀO BẢNG FACT_STREAMS
 fact_streams_df = df_flattened.select(
     "played_at", "track_id", "artist_id", "album_id", "ingestion_time"
 ).dropDuplicates(["played_at", "track_id"])

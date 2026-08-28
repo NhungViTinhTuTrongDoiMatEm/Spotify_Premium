@@ -5,9 +5,8 @@ import pyspark.sql.functions as F
 # 1. Tạo Database cho tầng Gold (LOCATION tại /tmp/ cho Serverless Compute)
 spark.sql("CREATE DATABASE IF NOT EXISTS spotify_gold LOCATION '/tmp/spotify_gold'")
 
-# ==============================================================================
-# 2. GOLD TABLE 1: TOP BÀI HÁT NGHE NHIỀU NHẤT & TỔNG SỐ PHÚT NGHE
-# ==============================================================================
+# COMMAND ----------
+# DBTITLE 1,02. GOLD TABLE 1: TOP BÀI HÁT NGHE NHIỀU NHẤT & TỔNG SỐ PHÚT NGHE
 spark.sql("""
 CREATE OR REPLACE TABLE spotify_gold.gold_top_tracks AS
 SELECT 
@@ -30,9 +29,8 @@ LIMIT 50
 """)
 print("✅ Đã tạo bảng Gold: spotify_gold.gold_top_tracks")
 
-# ==============================================================================
-# 3. GOLD TABLE 2: TOP NGHỆ SĨ ĐƯỢC NGHE NHIỀU NHẤT
-# ==============================================================================
+# COMMAND ----------
+# DBTITLE 1,03. GOLD TABLE 2: TOP NGHỆ SĨ ĐƯỢC NGHE NHIỀU NHẤT
 spark.sql("""
 CREATE OR REPLACE TABLE spotify_gold.gold_top_artists AS
 SELECT 
@@ -50,9 +48,8 @@ LIMIT 50
 """)
 print("✅ Đã tạo bảng Gold: spotify_gold.gold_top_artists")
 
-# ==============================================================================
-# 4. GOLD TABLE 3: PHÂN BỐ KHUNG GIỜ VÀ NGÀY TRONG TUẦN (LISTENING SCHEDULE)
-# ==============================================================================
+# COMMAND ----------
+# DBTITLE 1,04. GOLD TABLE 3: PHÂN BỐ KHUNG GIỜ VÀ NGÀY TRONG TUẦN (LISTENING SCHEDULE)
 spark.sql("""
 CREATE OR REPLACE TABLE spotify_gold.gold_listening_schedule AS
 SELECT 
@@ -80,9 +77,8 @@ GROUP BY
 """)
 print("✅ Đã tạo bảng Gold: spotify_gold.gold_listening_schedule")
 
-# ==============================================================================
-# 5. GOLD VIEW 4: BẢNG THẺ SỐ KPI TỔNG QUAN (SUMMARY SCORECARD)
-# ==============================================================================
+# COMMAND ----------
+# DBTITLE 1,05. GOLD VIEW 4: BẢNG THẺ SỐ KPI TỔNG QUAN (SUMMARY SCORECARD)
 spark.sql("""
 CREATE OR REPLACE VIEW spotify_gold.gold_listening_summary AS
 SELECT 
