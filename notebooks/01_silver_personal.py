@@ -20,10 +20,8 @@ except Exception:
         print(f"⚠️ Không đọc được dữ liệu Bronze từ Workspace/DBFS. Lỗi: {e}")
         dbutils.notebook.exit("No raw data found")
 
-
 # COMMAND ----------
 # DBTITLE 1,02. phẳng hóa JSON
-
 # 3. Unnest mảng JSON 'items' chứa thông tin các bài hát vừa nghe
 df_exploded = df_raw.select(
     F.explode("items").alias("item"),
@@ -55,7 +53,7 @@ df_flattened = df_exploded.select(
 )
 
 # COMMAND ----------
-# DBTITLE 1,02. UPSERT (MERGE INTO) VÀO CÁC BẢNG DIMENSION VÀ FACT (dim_tracks, dim_artists, fact_streams)
+# DBTITLE 1,03. UPSERT (MERGE INTO) VÀO CÁC BẢNG DIMENSION VÀ FACT (dim_tracks, dim_artists, fact_streams)
 # ==============================================================================
 # 5. UPSERT (MERGE INTO) VÀO BẢNG DIM_TRACKS
 # ==============================================================================

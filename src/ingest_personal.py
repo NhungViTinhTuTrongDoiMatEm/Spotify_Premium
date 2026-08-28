@@ -81,7 +81,7 @@ def upload_to_databricks_workspace(data_json, target_path):
         print("ℹ️ Chưa cấu hình DATABRICKS_HOST/DATABRICKS_TOKEN. Bỏ qua bước đẩy lên Databricks Workspace.")
         return
 
-    host = DATABRICKS_HOST.rstrip("/")
+    host = DATABRICKS_HOST.strip().rstrip("/")
     headers = {
         "Authorization": f"Bearer {DATABRICKS_TOKEN}",
         "Content-Type": "application/json",
