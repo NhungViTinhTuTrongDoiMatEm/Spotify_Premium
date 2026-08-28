@@ -1,5 +1,5 @@
 # Databricks notebook source
-# DBTITLE 1,01. Khởi tạo Schema & Đọc, Phẳng hóa Dữ liệu Bronze
+# DBTITLE 1,01. Khởi tạo Schema & Đọc
 import pyspark.sql.functions as F
 from delta.tables import DeltaTable
 
@@ -19,6 +19,10 @@ except Exception:
     except Exception as e:
         print(f"⚠️ Không đọc được dữ liệu Bronze từ Workspace/DBFS. Lỗi: {e}")
         dbutils.notebook.exit("No raw data found")
+
+
+# COMMAND ----------
+# DBTITLE 1,02. phẳng hóa JSON
 
 # 3. Unnest mảng JSON 'items' chứa thông tin các bài hát vừa nghe
 df_exploded = df_raw.select(
@@ -51,7 +55,7 @@ df_flattened = df_exploded.select(
 )
 
 # COMMAND ----------
-# DBTITLE 1,02. UPSERT (MERGE INTO) VÀO CÁC BẢNG DIMENSION (dim_tracks & dim_artists)
+# DBTITLE 1,02. UPSERT (MERGE INTO) VÀO CÁC BẢNG DIMENSION VÀ FACT (dim_tracks, dim_artists, fact_streams)
 # ==============================================================================
 # 5. UPSERT (MERGE INTO) VÀO BẢNG DIM_TRACKS
 # ==============================================================================
@@ -89,8 +93,6 @@ else:
     ).whenMatchedUpdateAll().whenNotMatchedInsertAll().execute()
     print("🔄 Đã MERGE INTO (Upsert) bảng: spotify_silver.dim_artists")
 
-# COMMAND ----------
-# DBTITLE 1,03. MERGE INTO VÀO BẢNG FACT_STREAMS
 # ==============================================================================
 # 7. MERGE INTO VÀO BẢNG FACT_STREAMS (Khử trùng lặp theo played_at + track_id)
 # ==============================================================================
