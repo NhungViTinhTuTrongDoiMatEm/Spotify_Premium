@@ -1,7 +1,7 @@
 """
 Module trích xuất dữ liệu nghe nhạc cá nhân (Recently Played Tracks).
 Thực thi định kỳ bởi GitHub Actions hoặc chạy thủ công.
-Gửi payload JSON thô vào Databricks DBFS: dbfs:/FileStore/spotify/bronze_raw/
+Gửi payload JSON thô vào Databricks Workspace Files: /Workspace/spotify_raw/
 """
 
 import os
@@ -12,9 +12,18 @@ from datetime import datetime, timezone
 import requests
 from dotenv import load_dotenv
 
+# Khắc phục lỗi in Unicode/Emoji trên Terminal Windows
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+# Tự động khắc phục sự cố biến chứng chỉ SSL hỏng của Windows (PostgreSQL cũ)
+for env_var in ["REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE", "SSL_CERT_FILE"]:
+    if env_var in os.environ and not os.path.exists(os.environ[env_var]):
+        os.environ.pop(env_var, None)
+
 load_dotenv()
 
-# 2. Lấy thông tin cấu hình từ biến môi trường
+# Lấy thông tin cấu hình từ biến môi trường
 CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 REFRESH_TOKEN = os.getenv("SPOTIFY_REFRESH_TOKEN")
@@ -58,40 +67,50 @@ def fetch_recently_played(access_token, limit=50):
         sys.exit(1)
 
 
-def upload_to_databricks_dbfs(data_json, dbfs_path):
-    """Đẩy payload JSON lên Databricks DBFS thông qua Databricks REST API."""
+def upload_to_databricks_workspace(data_json, target_path):
+    """Lưu file JSON thô ở local VÀ đẩy lên Databricks Workspace Files (Chuẩn Databricks mới)."""
+    # 1. Luôn luôn lưu 1 bản sao file JSON thô ở máy local
+    os.makedirs("data/bronze_spotify_raw", exist_ok=True)
+    local_filename = os.path.join("data/bronze_spotify_raw", os.path.basename(target_path))
+    with open(local_filename, "w", encoding="utf-8") as f:
+        json.dump(data_json, f, ensure_ascii=False, indent=2)
+    print(f"💾 Đã lưu dữ liệu Bronze local tại: {local_filename}")
+
+    # 2. Kiểm tra cấu hình Databricks
     if not DATABRICKS_HOST or not DATABRICKS_TOKEN or "your_databricks" in DATABRICKS_TOKEN:
-        print("ℹ️ Chưa cấu hình DATABRICKS_HOST/DATABRICKS_TOKEN. Đang lưu tạm file JSON dữ liệu thô ở local...")
-        os.makedirs("data/bronze_spotify_raw", exist_ok=True)
-        local_filename = os.path.join("data/bronze_spotify_raw", os.path.basename(dbfs_path))
-        with open(local_filename, "w", encoding="utf-8") as f:
-            json.dump(data_json, f, ensure_ascii=False, indent=2)
-        print(f"💾 Đã lưu dữ liệu Bronze local tại: {local_filename}")
+        print("ℹ️ Chưa cấu hình DATABRICKS_HOST/DATABRICKS_TOKEN. Bỏ qua bước đẩy lên Databricks Workspace.")
         return
 
-    # Chuẩn hoá URL Databricks Host
     host = DATABRICKS_HOST.rstrip("/")
-    api_url = f"{host}/api/2.0/dbfs/put"
-
-    # Encode dữ liệu JSON sang chuỗi Base64 theo quy định Databricks DBFS REST API
-    json_bytes = json.dumps(data_json, ensure_ascii=False).encode("utf-8")
-    content_b64 = base64.b64encode(json_bytes).decode("utf-8")
-
     headers = {
         "Authorization": f"Bearer {DATABRICKS_TOKEN}",
         "Content-Type": "application/json",
     }
+
+    # 3. Tự động tạo thư mục cha trên Databricks Workspace nếu chưa tồn tại
+    parent_dir = os.path.dirname(target_path).replace("\\", "/")
+    if parent_dir:
+        mkdirs_url = f"{host}/api/2.0/workspace/mkdirs"
+        requests.post(mkdirs_url, headers=headers, json={"path": parent_dir})
+
+    # 4. Đẩy file JSON thô vào Databricks Workspace bằng REST API
+    api_url = f"{host}/api/2.0/workspace/import"
+
+    json_bytes = json.dumps(data_json, ensure_ascii=False).encode("utf-8")
+    content_b64 = base64.b64encode(json_bytes).decode("utf-8")
+
     payload = {
-        "path": dbfs_path,
-        "contents": content_b64,
+        "path": target_path,
+        "content": content_b64,
+        "format": "AUTO",
         "overwrite": True,
     }
 
     response = requests.post(api_url, headers=headers, json=payload)
     if response.status_code == 200:
-        print(f"🚀 [SUCCESS] Đã tải thành công dữ liệu Bronze lên Databricks DBFS: {dbfs_path}")
+        print(f"🚀 [SUCCESS] Đã tải thành công dữ liệu Bronze lên Databricks Workspace: {target_path}")
     else:
-        print(f"❌ Lỗi ghi file vào Databricks DBFS ({response.status_code}): {response.text}")
+        print(f"❌ Lỗi ghi file vào Databricks Workspace ({response.status_code}): {response.text}")
 
 
 def main():
@@ -114,11 +133,11 @@ def main():
 
     print(f"📊 Thu thập thành công {len(payload.get('items', []))} bản ghi nghe nhạc.")
 
-    # Đặt tên file dữ liệu thô trên DBFS
-    dbfs_target_path = f"/FileStore/spotify/bronze_raw/personal_{batch_id}.json"
+    # Đặt tên file dữ liệu thô trên Databricks Workspace Files
+    target_path = f"/Workspace/spotify_raw/personal_{batch_id}.json"
 
-    print("📤 [3/3] Đang đẩy dữ liệu thô Bronze vào Databricks DBFS...")
-    upload_to_databricks_dbfs(payload, dbfs_target_path)
+    print("📤 [3/3] Đang đẩy dữ liệu thô Bronze vào Databricks Workspace...")
+    upload_to_databricks_workspace(payload, target_path)
 
 
 if __name__ == "__main__":

@@ -1,21 +1,24 @@
 # Databricks notebook source
 # DBTITLE 1,01_silver_personal - PySpark Data Cleansing & Star Schema Modeling
 import pyspark.sql.functions as F
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, BooleanType, TimestampType
 from delta.tables import DeltaTable
 
 # 1. Thiết lập Database Schema cho tầng Silver (LOCATION tại /tmp/ cho Serverless Compute)
 spark.sql("CREATE DATABASE IF NOT EXISTS spotify_silver LOCATION '/tmp/spotify_silver'")
 
-# 2. Đọc toàn bộ các file JSON thô Bronze từ DBFS
-bronze_path = "dbfs:/FileStore/spotify/bronze_raw/personal_*.json"
-
+# 2. Đọc toàn bộ các file JSON thô Bronze từ Workspace Files hoặc DBFS
 try:
+    bronze_path = "/Workspace/spotify_raw/personal_*.json"
     df_raw = spark.read.option("multiline", "true").json(bronze_path)
     print(f"📥 Đã đọc thành công dữ liệu Bronze từ: {bronze_path}")
-except Exception as e:
-    print(f"⚠️ Chưa tìm thấy file Bronze trên DBFS. Lỗi: {e}")
-    dbutils.notebook.exit("No raw data found")
+except Exception:
+    try:
+        bronze_path = "/tmp/spotify_raw/personal_*.json"
+        df_raw = spark.read.option("multiline", "true").json(bronze_path)
+        print(f"📥 Đã đọc thành công dữ liệu Bronze từ: {bronze_path}")
+    except Exception as e:
+        print(f"⚠️ Không đọc được dữ liệu Bronze từ Workspace/DBFS. Lỗi: {e}")
+        dbutils.notebook.exit("No raw data found")
 
 # 3. Unnest mảng JSON 'items' chứa thông tin các bài hát vừa nghe
 df_exploded = df_raw.select(
@@ -59,9 +62,10 @@ dim_tracks_df = df_flattened.select(
 ).dropDuplicates(["track_id"])
 
 dim_tracks_table_name = "spotify_silver.dim_tracks"
+dim_tracks_path = "/tmp/spotify_silver/dim_tracks"
 
 if not spark.catalog.tableExists(dim_tracks_table_name):
-    dim_tracks_df.write.format("delta").mode("overwrite").saveAsTable(dim_tracks_table_name)
+    dim_tracks_df.write.format("delta").mode("overwrite").option("path", dim_tracks_path).saveAsTable(dim_tracks_table_name)
     print("✅ Đã khởi tạo bảng Silver: spotify_silver.dim_tracks")
 else:
     delta_tracks = DeltaTable.forName(spark, dim_tracks_table_name)
@@ -76,9 +80,10 @@ else:
 # ==============================================================================
 dim_artists_df = df_flattened.select("artist_id", "artist_name").dropDuplicates(["artist_id"])
 dim_artists_table_name = "spotify_silver.dim_artists"
+dim_artists_path = "/tmp/spotify_silver/dim_artists"
 
 if not spark.catalog.tableExists(dim_artists_table_name):
-    dim_artists_df.write.format("delta").mode("overwrite").saveAsTable(dim_artists_table_name)
+    dim_artists_df.write.format("delta").mode("overwrite").option("path", dim_artists_path).saveAsTable(dim_artists_table_name)
     print("✅ Đã khởi tạo bảng Silver: spotify_silver.dim_artists")
 else:
     delta_artists = DeltaTable.forName(spark, dim_artists_table_name)
@@ -96,9 +101,10 @@ fact_streams_df = df_flattened.select(
 ).dropDuplicates(["played_at", "track_id"])
 
 fact_streams_table_name = "spotify_silver.fact_streams"
+fact_streams_path = "/tmp/spotify_silver/fact_streams"
 
 if not spark.catalog.tableExists(fact_streams_table_name):
-    fact_streams_df.write.format("delta").mode("overwrite").saveAsTable(fact_streams_table_name)
+    fact_streams_df.write.format("delta").mode("overwrite").option("path", fact_streams_path).saveAsTable(fact_streams_table_name)
     print("✅ Đã khởi tạo bảng Silver Fact: spotify_silver.fact_streams")
 else:
     delta_fact = DeltaTable.forName(spark, fact_streams_table_name)
