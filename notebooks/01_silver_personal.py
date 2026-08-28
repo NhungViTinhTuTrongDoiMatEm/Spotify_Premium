@@ -26,18 +26,16 @@ df_exploded = df_raw.select(
     F.col("ingestion_metadata.ingestion_time").alias("ingestion_time")
 )
 
-# 4. Trích xuất các trường dữ liệu phẳng (Flattening fields)
+# 4. Trích xuất các trường dữ liệu phẳng (Flattening fields) - Đã bỏ popularity và context_type
 df_flattened = df_exploded.select(
     F.to_timestamp(F.col("item.played_at")).alias("played_at"),
     F.col("item.track.id").alias("track_id"),
     F.col("item.track.name").alias("track_name"),
     F.col("item.track.duration_ms").cast("integer").alias("duration_ms"),
     F.col("item.track.explicit").cast("boolean").alias("explicit"),
-    F.col("item.track.popularity").cast("integer").alias("popularity"),
     F.col("item.track.album.id").alias("album_id"),
     F.col("item.track.album.name").alias("album_name"),
     F.explode("item.track.artists").alias("artist"),
-    F.col("item.context.type").alias("context_type"),
     F.col("ingestion_time")
 ).select(
     "played_at",
@@ -45,12 +43,10 @@ df_flattened = df_exploded.select(
     "track_name",
     "duration_ms",
     "explicit",
-    "popularity",
     "album_id",
     "album_name",
     F.col("artist.id").alias("artist_id"),
     F.col("artist.name").alias("artist_name"),
-    "context_type",
     "ingestion_time"
 )
 
@@ -58,7 +54,7 @@ df_flattened = df_exploded.select(
 # 5. UPSERT (MERGE INTO) VÀO BẢNG DIM_TRACKS
 # ==============================================================================
 dim_tracks_df = df_flattened.select(
-    "track_id", "track_name", "duration_ms", "explicit", "popularity", "album_id"
+    "track_id", "track_name", "duration_ms", "explicit", "album_id"
 ).dropDuplicates(["track_id"])
 
 dim_tracks_table_name = "spotify_silver.dim_tracks"
@@ -97,7 +93,7 @@ else:
 # 7. MERGE INTO VÀO BẢNG FACT_STREAMS (Khử trùng lặp theo played_at + track_id)
 # ==============================================================================
 fact_streams_df = df_flattened.select(
-    "played_at", "track_id", "artist_id", "album_id", "context_type", "ingestion_time"
+    "played_at", "track_id", "artist_id", "album_id", "ingestion_time"
 ).dropDuplicates(["played_at", "track_id"])
 
 fact_streams_table_name = "spotify_silver.fact_streams"
