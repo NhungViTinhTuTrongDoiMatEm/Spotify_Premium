@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify Analytics & Music Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Glow Accents -->
+  <div class="bg-glow top-left"></div>
+  <div class="bg-glow top-right"></div>
+
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="logo-container">
+      <div class="spotify-logo-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.498 17.307c-.216.353-.675.467-1.028.252-2.822-1.724-6.375-2.115-10.562-1.158-.403.093-.806-.157-.899-.56-.093-.404.157-.807.56-.9 4.582-1.047 8.513-.604 11.678 1.339.352.215.466.674.251 1.027zm1.467-3.262c-.272.443-.852.584-1.295.312-3.23-1.986-8.156-2.56-11.977-1.4-1.503.456-1.04-.183-1.496-.686-.456-.503.183-1.04.686-1.496 4.37-1.327 9.805-.68 13.48 1.583.443.272.584.852.312 1.295zm.126-3.41c-3.873-2.3-10.262-2.513-13.978-1.385-.593.18-1.223-.153-1.403-.746-.18-.593.153-1.223.746-1.403 4.267-1.296 11.31-1.05 15.753 1.587.534.317.708 1.008.39 1.542-.317.534-1.008.708-1.542.39z"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="brand-title">Spotify</span>
+        <span class="brand-badge">ANALYTICS</span>
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      <button class="nav-btn active" data-tab="overview">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>
+        <span>Tổng Quan</span>
+      </button>
+
+      <button class="nav-btn" data-tab="search">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <span>Tra Cứu Âm Nhạc</span>
+      </button>
+
+      <button class="nav-btn" data-tab="top-tracks">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+        <span>Top 50 Bài Hát</span>
+      </button>
+
+      <button class="nav-btn" data-tab="top-artists">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <span>Top 50 Ca Sĩ</span>
+      </button>
+
+      <button class="nav-btn" data-tab="wrapped">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+        <span>Spotify Wrapped</span>
+      </button>
+
+      <button class="nav-btn" data-tab="recent">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+        <span>Lịch Sử Gần Đây</span>
+      </button>
+    </nav>
+
+    <!-- Sync Trigger Section -->
+    <div class="sync-card">
+      <div class="sync-info">
+        <span class="sync-label">Cập nhật dữ liệu</span>
+        <span class="sync-time" id="latest-sync-label">Đang nạp...</span>
+      </div>
+      <button class="btn-sync" id="btn-sync">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" class="spin-icon"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+        <span>Đồng Bộ Ngay</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-wrapper">
+    <!-- Top Bar Search -->
+    <header class="top-header">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="global-search-input" placeholder="Tìm kiếm bài hát, ca sĩ, album yêu thích của bạn... (Ctrl + K)" autocomplete="off">
+        <span class="search-shortcut">⌘K</span>
+      </div>
+
+      <div class="user-pill">
+        <div class="user-avatar">🎧</div>
+        <span class="user-name">Spotify VIP</span>
+      </div>
+    </header>
+
+    <!-- Content Sections -->
+    <div class="content-body">
+      <!-- 1. TAB OVERVIEW -->
+      <section class="tab-pane active" id="pane-overview">
+        <!-- Hero Banner -->
+        <div class="hero-banner">
+          <div class="hero-content">
+            <span class="hero-tag">PERSONAL LAKEHOUSE ANALYTICS</span>
+            <h1 class="hero-title">Âm Nhạc Của Bạn, Câu Chuyện Của Bạn</h1>
+            <p class="hero-subtitle" id="persona-text">Đang phân tích thói quen nghe nhạc...</p>
+            <div class="hero-actions">
+              <button class="btn-primary" onclick="switchTab('top-tracks')">Xem Top 50 Bài Hát</button>
+              <button class="btn-secondary" onclick="switchTab('search')">Tra Cứu Dữ Liệu</button>
+            </div>
+          </div>
+          <div class="hero-badge-card">
+            <span class="badge-icon">🦉</span>
+            <span class="badge-label">Khung Giờ Cao Điểm</span>
+            <span class="badge-value" id="peak-slot-label">...</span>
+          </div>
+        </div>
+
+        <!-- 4 KPI Counter Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon green">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-num" id="kpi-total-streams">--</span>
+              <span class="kpi-desc">Tổng Lượt Nghe</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon purple">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm3.3 14.71L11 12.41V7h2v4.59l3.71 3.71-1.42 1.41z"/></svg>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-num" id="kpi-total-hours">--</span>
+              <span class="kpi-desc">Tổng Giờ Nghe (Phút)</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon blue">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-num" id="kpi-unique-tracks">--</span>
+              <span class="kpi-desc">Bài Hát Độc Bản</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon orange">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-num" id="kpi-unique-artists">--</span>
+              <span class="kpi-desc">Nghệ Sĩ Độc Bản</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Top Section Preview -->
+        <div class="section-header">
+          <h2 class="section-title">Top 6 Bài Hát Nghe Nhiều Nhất</h2>
+          <button class="link-btn" onclick="switchTab('top-tracks')">Xem tất cả ➔</button>
+        </div>
+        <div class="music-card-grid" id="quick-top-tracks">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <div class="section-header" style="margin-top: 32px;">
+          <h2 class="section-title">Top Nghệ Sĩ Bạn Yêu Thích Nhất</h2>
+          <button class="link-btn" onclick="switchTab('top-artists')">Xem tất cả ➔</button>
+        </div>
+        <div class="artist-card-grid" id="quick-top-artists">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- 2. TAB SEARCH & EXPLORE -->
+      <section class="tab-pane" id="pane-search">
+        <div class="search-header-panel">
+          <h2 class="section-title">Tra Cứu Chi Tiết Mọi Bài Hát & Ca Sĩ</h2>
+          <p class="section-subtitle">Tìm kiếm theo tên bài hát, tên ca sĩ chính, ca sĩ feat hoặc album trong toàn bộ lịch sử nghe nhạc của bạn.</p>
+        </div>
+
+        <div class="search-results-container">
+          <div class="search-column">
+            <h3 class="column-title">🎵 Bài Hát Phù Hợp (<span id="count-matched-tracks">0</span>)</h3>
+            <div class="track-list" id="search-tracks-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <div class="search-column">
+            <h3 class="column-title">🎤 Nghệ Sĩ Phù Hợp (<span id="count-matched-artists">0</span>)</h3>
+            <div class="artist-list" id="search-artists-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. TAB TOP 50 TRACKS -->
+      <section class="tab-pane" id="pane-top-tracks">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">🏆 Top 50 Bài Hát Nghe Nhiều Nhất</h2>
+            <p class="section-subtitle">Xếp hạng dựa trên tần suất phát nhạc và tổng số phút nghe tích lũy.</p>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="custom-table" id="top-tracks-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>Bài Hát</th>
+                <th>Album</th>
+                <th>Lượt Nghe</th>
+                <th>Tổng Thời Gian</th>
+                <th>Lần Nghe Cuối</th>
+                <th style="width: 100px;">Spotify</th>
+              </tr>
+            </thead>
+            <tbody id="top-tracks-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 4. TAB TOP 50 ARTISTS -->
+      <section class="tab-pane" id="pane-top-artists">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">🎤 Top 50 Nghệ Sĩ Bạn Nghe Nhiều Nhất</h2>
+            <p class="section-subtitle">Thống kê qua bảng cầu nối Bridge Table (Ghi nhận cả ca sĩ chính lẫn ca sĩ feat hợp tác).</p>
+          </div>
+        </div>
+        <div class="artist-card-grid large" id="full-top-artists">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- 5. TAB WRAPPED ANALYTICS -->
+      <section class="tab-pane" id="pane-wrapped">
+        <div class="wrapped-card">
+          <div class="wrapped-banner">
+            <span class="wrapped-year">2026</span>
+            <h2 class="wrapped-heading">Phong Cách Nghe Nhạc Của Bạn</h2>
+            <p class="wrapped-persona" id="wrapped-persona-badge">Đang tổng hợp...</p>
+          </div>
+
+          <div class="wrapped-stats-grid">
+            <div class="stat-box">
+              <span class="stat-val" id="wrapped-diversity">--%</span>
+              <span class="stat-name">Độ Đa Dạng Âm Nhạc</span>
+              <p class="stat-sub">Tỉ lệ ca sĩ độc bản trên tổng lượt nghe</p>
+            </div>
+            <div class="stat-box">
+              <span class="stat-val" id="wrapped-hours">--</span>
+              <span class="stat-name">Giờ Thưởng Thức</span>
+              <p class="stat-sub">Tổng thời lượng nghe nhạc</p>
+            </div>
+            <div class="stat-box">
+              <span class="stat-val" id="wrapped-top-artist">--</span>
+              <span class="stat-name">Nghệ Sĩ Quán Quân</span>
+              <p class="stat-sub">Nghệ sĩ nghe nhiều nhất</p>
+            </div>
+          </div>
+
+          <!-- Time Distribution Visual Bars -->
+          <div class="time-distribution-panel">
+            <h3 class="panel-title">🕒 Phân Bố Thói Quen Nghe Nhạc Theo Khung Giờ</h3>
+            <div class="time-slots-container" id="time-slots-bars">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. TAB RECENT STREAMS -->
+      <section class="tab-pane" id="pane-recent">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">🕒 25 Lượt Nghe Gần Nhất</h2>
+            <p class="section-subtitle">Dữ liệu thô vừa được đồng bộ trực tiếp từ Spotify Recently Played API.</p>
+          </div>
+        </div>
+        <div class="track-list" id="recent-streams-list">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Bottom Floating Audio Preview / Player Bar -->
+  <footer class="player-bar">
+    <div class="player-left">
+      <img src="https://i.scdn.co/image/ab67616d0000b273b4262def1aaeb361c9ee55b0" id="player-img" alt="Cover" class="player-cover">
+      <div class="player-track-info">
+        <span class="player-title" id="player-title">Chọn bài hát để xem chi tiết</span>
+        <span class="player-artist" id="player-artist">Spotify Premium Analytics</span>
+      </div>
+    </div>
+
+    <div class="player-center">
+      <div class="player-controls">
+        <span class="playing-indicator">
+          <span></span><span></span><span></span><span></span>
+        </span>
+        <span class="player-status-text" id="player-status">Sẵn sàng khám phá dữ liệu</span>
+      </div>
+    </div>
+
+    <div class="player-right">
+      <a href="#" id="player-spotify-link" target="_blank" class="btn-spotify-open">
+        <span>Nghe Trên Spotify</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7zm5 16H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/></svg>
+      </a>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
