@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # DBTITLE 1,01. Khởi tạo Schema & Đọc Dữ liệu Bronze
 import pyspark.sql.functions as F
 from pyspark.sql.functions import broadcast
@@ -25,11 +29,12 @@ except Exception:
 df_exploded = df_raw.select(
     F.explode("items").alias("item"),
     F.col("ingestion_metadata.ingestion_time").alias("ingestion_time")
-).cache()
+)
 
 print(f"⚡ Đã Cache thành công {df_exploded.count()} bản ghi vào RAM!")
 
 # COMMAND ----------
+
 # DBTITLE 1,02. Tách dữ liệu: dim_tracks, dim_artists & bridge_track_artists
 # 1. Trích xuất Bảng DIM_TRACKS (Không bị nhân bản dòng)
 dim_tracks_df = df_exploded.select(
@@ -72,6 +77,7 @@ fact_streams_df = df_exploded.select(
 ).dropDuplicates(["played_at", "track_id"])
 
 # COMMAND ----------
+
 # DBTITLE 1,03. Upsert (MERGE INTO) với Broadcast Join vào các Bảng Silver
 # --- 1. UPSERT VÀO DIM_TRACKS ---
 dim_tracks_table = "spotify_silver.dim_tracks"
@@ -125,6 +131,4 @@ else:
     ).whenNotMatchedInsertAll().execute()
     print("🔄 Đã MERGE INTO (Broadcast): fact_streams")
 
-# Giải phóng bộ nhớ Cache
-df_exploded.unpersist()
 print("🎉 Hoàn tất xử lý Silver Layer tối ưu với Bridge Table và Caching!")
