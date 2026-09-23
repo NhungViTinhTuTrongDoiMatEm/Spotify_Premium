@@ -14,6 +14,9 @@ SELECT
   t.track_id, 
   t.track_name, 
   CONCAT_WS(', ', COLLECT_SET(a.artist_name)) AS artist_names,
+  MAX(t.image_url) AS image_url,
+  MAX(t.album_name) AS album_name,
+  MAX(t.spotify_url) AS spotify_url,
   COUNT(f.track_id) AS total_streams,
   ROUND(SUM(t.duration_ms) / 60000.0, 2) AS total_minutes_listened,
   MIN(f.played_at) AS first_listened_at,
@@ -26,7 +29,7 @@ GROUP BY
   t.track_id, 
   t.track_name
 """)
-print("✅ Đã cập nhật bảng Gold Vật lý: agg_track_metrics (Toàn bộ bài hát)")
+print("✅ Đã cập nhật bảng Gold Vật lý: agg_track_metrics (Toàn bộ bài hát có ảnh bìa & link)")
 
 # COMMAND ----------
 # DBTITLE 1,03. AGG TABLE 2: Tổng hợp Số liệu 100% Nghệ Sĩ (agg_artist_metrics)
@@ -36,6 +39,8 @@ CREATE OR REPLACE TABLE spotify_gold.agg_artist_metrics AS
 SELECT 
   a.artist_id, 
   a.artist_name,
+  MAX(a.sample_image_url) AS sample_image_url,
+  MAX(a.spotify_url) AS spotify_url,
   COUNT(f.track_id) AS total_streams,
   ROUND(SUM(t.duration_ms) / 60000.0, 2) AS total_minutes_listened,
   MIN(f.played_at) AS first_listened_at,
@@ -48,7 +53,7 @@ GROUP BY
   a.artist_id, 
   a.artist_name
 """)
-print("✅ Đã cập nhật bảng Gold Vật lý: agg_artist_metrics (Toàn bộ nghệ sĩ)")
+print("✅ Đã cập nhật bảng Gold Vật lý: agg_artist_metrics (Toàn bộ nghệ sĩ có ảnh đại diện & link)")
 
 # COMMAND ----------
 # DBTITLE 1,04. AGG TABLE 3: Phân bố Khung giờ & Ngày trong tuần (agg_listening_schedule)
@@ -70,5 +75,55 @@ ORDER BY
   hour_of_day ASC
 """)
 print("✅ Đã cập nhật bảng Gold Vật lý: agg_listening_schedule")
+
+# COMMAND ----------
+# DBTITLE 1,05. AGG TABLE 4: Thống kê Tiến độ Hoàn thành Từng Album (agg_album_metrics)
+spark.sql("""
+CREATE OR REPLACE TABLE spotify_gold.agg_album_metrics AS
+WITH album_tracks_summary AS (
+  SELECT 
+    t.album_id,
+    COUNT(DISTINCT t.track_id) AS catalog_track_count,
+    COUNT(DISTINCT CASE WHEN f.track_id IS NOT NULL THEN t.track_id END) AS tracks_listened,
+    COUNT(DISTINCT CASE WHEN f.track_id IS NULL THEN t.track_id END) AS unheard_tracks_count,
+    COUNT(f.track_id) AS total_streams,
+    ROUND(SUM(CASE WHEN f.track_id IS NOT NULL THEN t.duration_ms ELSE 0 END) / 60000.0, 2) AS total_minutes_listened,
+    MIN(f.played_at) AS first_listened_at,
+    MAX(f.played_at) AS last_listened_at
+  FROM spotify_silver.dim_tracks t
+  LEFT JOIN spotify_silver.fact_streams f ON t.track_id = f.track_id
+  WHERE t.album_id IS NOT NULL
+  GROUP BY t.album_id
+),
+album_artists AS (
+  SELECT 
+    t.album_id,
+    CONCAT_WS(', ', COLLECT_SET(art.artist_name)) AS artist_names
+  FROM spotify_silver.dim_tracks t
+  JOIN spotify_silver.bridge_track_artists b ON t.track_id = b.track_id
+  JOIN spotify_silver.dim_artists art ON b.artist_id = art.artist_id
+  GROUP BY t.album_id
+)
+SELECT 
+  a.album_id,
+  a.album_name,
+  a.album_type,
+  a.release_date,
+  a.image_url,
+  a.spotify_url,
+  COALESCE(ar.artist_names, 'Various Artists') AS artist_names,
+  GREATEST(COALESCE(s.catalog_track_count, 0), COALESCE(a.total_tracks, 0)) AS total_tracks,
+  COALESCE(s.tracks_listened, 0) AS tracks_listened,
+  GREATEST(0, GREATEST(COALESCE(s.catalog_track_count, 0), COALESCE(a.total_tracks, 0)) - COALESCE(s.tracks_listened, 0)) AS unheard_tracks_count,
+  ROUND(COALESCE(s.tracks_listened, 0) * 100.0 / NULLIF(GREATEST(COALESCE(s.catalog_track_count, 0), COALESCE(a.total_tracks, 0)), 0), 1) AS completion_rate,
+  COALESCE(s.total_streams, 0) AS total_streams,
+  COALESCE(s.total_minutes_listened, 0.0) AS total_minutes_listened,
+  s.first_listened_at,
+  s.last_listened_at
+FROM spotify_silver.dim_albums a
+LEFT JOIN album_tracks_summary s ON a.album_id = s.album_id
+LEFT JOIN album_artists ar ON a.album_id = ar.album_id
+""")
+print("✅ Đã cập nhật bảng Gold Vật lý: agg_album_metrics (Tiến độ Album & Bài chưa nghe)")
 
 print("🎉 Hoàn tất tính toán các Bảng Vật Lý Tầng Gold (Cumulative Aggregation Tables)!")

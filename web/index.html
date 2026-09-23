@@ -39,6 +39,11 @@
         <span>Tra Cứu Âm Nhạc</span>
       </button>
 
+      <button class="nav-btn" data-tab="discovery">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>
+        <span>Khám Phá Album</span>
+      </button>
+
       <button class="nav-btn" data-tab="top-tracks">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
         <span>Top 50 Bài Hát</span>
@@ -66,10 +71,16 @@
         <span class="sync-label">Cập nhật dữ liệu</span>
         <span class="sync-time" id="latest-sync-label">Đang nạp...</span>
       </div>
-      <button class="btn-sync" id="btn-sync">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" class="spin-icon"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-        <span>Đồng Bộ Ngay</span>
-      </button>
+      <div class="sync-actions">
+        <button class="btn-sync" id="btn-sync">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" class="spin-icon"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          <span>Đồng Bộ Spotify</span>
+        </button>
+        <button class="btn-lakehouse-refresh" id="btn-refresh-lakehouse" title="Làm mới bộ nhớ đệm từ Databricks SQL">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          <span>Làm Mới Lakehouse</span>
+        </button>
+      </div>
     </div>
   </aside>
 
@@ -83,9 +94,18 @@
         <span class="search-shortcut">⌘K</span>
       </div>
 
-      <div class="user-pill">
-        <div class="user-avatar">🎧</div>
-        <span class="user-name">Spotify VIP</span>
+      <div class="header-right-group">
+        <!-- Lakehouse Connection Badge -->
+        <div class="lakehouse-status-pill live" id="lakehouse-status-pill" title="Nguồn dữ liệu truy vấn trực tiếp">
+          <span class="status-pulse-dot" id="lakehouse-status-dot"></span>
+          <span class="status-source-text" id="lakehouse-status-text">Databricks Lakehouse</span>
+          <span class="status-mode-tag" id="lakehouse-mode-tag">LIVE</span>
+        </div>
+
+        <div class="user-pill">
+          <div class="user-avatar">🎧</div>
+          <span class="user-name">Spotify VIP</span>
+        </div>
       </div>
     </header>
 
@@ -101,6 +121,7 @@
             <p class="hero-subtitle" id="persona-text">Đang phân tích thói quen nghe nhạc...</p>
             <div class="hero-actions">
               <button class="btn-primary" onclick="switchTab('top-tracks')">Xem Top 50 Bài Hát</button>
+              <button class="btn-secondary" onclick="switchTab('discovery')">✨ Gợi Ý Chưa Nghe</button>
               <button class="btn-secondary" onclick="switchTab('search')">Tra Cứu Dữ Liệu</button>
             </div>
           </div>
@@ -177,6 +198,11 @@
         <div class="search-header-panel">
           <h2 class="section-title">Tra Cứu Chi Tiết Mọi Bài Hát & Ca Sĩ</h2>
           <p class="section-subtitle">Tìm kiếm theo tên bài hát, tên ca sĩ chính, ca sĩ feat hoặc album trong toàn bộ lịch sử nghe nhạc của bạn.</p>
+          <div class="search-filter-pills" id="search-filter-pills">
+            <button class="filter-pill active" data-filter="all">Tất Cả</button>
+            <button class="filter-pill" data-filter="heard">✔️ Đã Nghe</button>
+            <button class="filter-pill" data-filter="unheard">✨ Gợi Ý Chưa Nghe</button>
+          </div>
         </div>
 
         <div class="search-results-container">
@@ -286,8 +312,74 @@
           <!-- Rendered dynamically -->
         </div>
       </section>
+
+      <!-- 7. TAB DISCOVERY (ALBUMS & UNHEARD GEMS) -->
+      <section class="tab-pane" id="pane-discovery">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">✨ Khám Phá Album & Bài Hát Chưa Nghe</h2>
+            <p class="section-subtitle">Hệ thống tự động đào sâu vào toàn bộ Album chứa các bài hát bạn từng nghe, tìm kiếm những bài hát ẩn (Unheard Gems) của cùng nghệ sĩ để gợi ý cho bạn.</p>
+          </div>
+        </div>
+
+        <!-- Sub-section 1: Unheard Gems Carousel -->
+        <div class="discovery-section">
+          <div class="discovery-sub-header">
+            <div class="discovery-sub-title-group">
+              <h3 class="discovery-sub-title">💎 Gợi Ý Bài Hát Chưa Nghe (Unheard Gems)</h3>
+              <span class="badge-counter" id="unheard-gems-count">0 bài</span>
+            </div>
+            <p class="discovery-sub-desc">Được ưu tiên dựa trên mức độ yêu thích của bạn đối với nghệ sĩ đó.</p>
+          </div>
+          <div class="gems-scroll-container">
+            <div class="unheard-gems-carousel" id="unheard-gems-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-section 2: Album Completion Tracker Grid -->
+        <div class="discovery-section" style="margin-top: 36px;">
+          <div class="discovery-sub-header">
+            <div class="discovery-sub-title-group">
+              <h3 class="discovery-sub-title">💿 Tiến Trình Khám Phá Album (Album Completion)</h3>
+              <span class="badge-counter" id="albums-tracker-count">0 album</span>
+            </div>
+            <p class="discovery-sub-desc">Xem bạn đã nghe bao nhiêu % các bài hát trong từng album. Bấm vào bất kỳ album nào để xem chi tiết từng bài hát!</p>
+          </div>
+          <div class="albums-tracker-grid" id="albums-tracker-grid">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </section>
     </div>
   </main>
+
+  <!-- Album Tracklist Modal -->
+  <div class="modal-backdrop" id="album-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-album-info">
+          <img src="" id="modal-album-img" class="modal-album-cover" alt="Album Cover">
+          <div>
+            <span class="modal-album-type" id="modal-album-type">ALBUM</span>
+            <h2 class="modal-album-title" id="modal-album-title">Tên Album</h2>
+            <p class="modal-album-artist" id="modal-album-artist">Nghệ Sĩ</p>
+            <div class="modal-progress-wrap">
+              <div class="modal-progress-bar"><div class="modal-progress-fill" id="modal-progress-fill"></div></div>
+              <span class="modal-progress-text" id="modal-progress-text">Đã nghe 0/0 bài (0%)</span>
+            </div>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-tracklist" id="modal-tracklist">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Bottom Floating Audio Preview / Player Bar -->
   <footer class="player-bar">

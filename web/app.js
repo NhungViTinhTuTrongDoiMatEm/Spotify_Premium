@@ -6,10 +6,15 @@
 let appData = null;
 let searchDebounceTimer = null;
 
+// Placeholder SVG chuẩn Spotify Dark Theme khi thiếu ảnh hoặc ảnh tải chậm
+const DEFAULT_TRACK_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24' fill='%231db954'%3E%3Crect width='24' height='24' fill='%23181818'/%3E%3Cpath d='M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z'/%3E%3C/svg%3E";
+const DEFAULT_ARTIST_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24' fill='%231db954'%3E%3Crect width='24' height='24' rx='12' fill='%23222'/%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+
 document.addEventListener("DOMContentLoaded", () => {
   initTabs();
   initSearch();
   initSync();
+  initAlbumModal();
   fetchAnalyticsData();
 });
 
@@ -34,6 +39,25 @@ function renderAllViews(data) {
   renderTopArtistsGrid(data.top_artists);
   renderWrapped(data);
   renderRecentStreams(data.recent_streams);
+  renderDiscovery(data.albums || [], data.unheard_recommendations || []);
+
+  // Cập nhật trạng thái nguồn dữ liệu Databricks Lakehouse
+  const statusPill = document.getElementById("lakehouse-status-pill");
+  const statusText = document.getElementById("lakehouse-status-text");
+  const modeTag = document.getElementById("lakehouse-mode-tag");
+  if (statusPill && statusText && modeTag) {
+    if (data.is_live) {
+      statusPill.className = "lakehouse-status-pill live";
+      statusText.textContent = "Databricks Lakehouse";
+      modeTag.textContent = "LIVE";
+      statusPill.title = `Dữ liệu thời gian thực từ ${data.warehouse_name || "Databricks SQL Warehouse"}`;
+    } else {
+      statusPill.className = "lakehouse-status-pill offline";
+      statusText.textContent = "Local Bronze JSON";
+      modeTag.textContent = "OFFLINE";
+      statusPill.title = "Đang chạy chế độ offline từ file JSON local";
+    }
+  }
 
   // Cập nhật nhãn đồng bộ
   if (data.latest_sync) {
@@ -114,7 +138,7 @@ function renderOverview(data) {
     card.onclick = () => updatePlayerBar(t);
 
     card.innerHTML = `
-      <img src="${t.image_url || 'https://via.placeholder.com/300'}" class="music-card-cover" alt="${t.track_name}">
+      <img src="${t.image_url || DEFAULT_TRACK_IMG}" onerror="this.onerror=null; this.src='${DEFAULT_TRACK_IMG}';" class="music-card-cover" alt="${t.track_name}">
       <span class="music-card-title">${t.track_name}</span>
       <span class="music-card-artist">${t.artist_names}</span>
       <span class="music-card-badge">🔥 ${t.total_streams} lượt</span>
@@ -133,7 +157,7 @@ function renderOverview(data) {
     card.onclick = () => filterByArtist(a.artist_name);
 
     card.innerHTML = `
-      <img src="${a.sample_image || 'https://via.placeholder.com/150'}" class="artist-avatar" alt="${a.artist_name}">
+      <img src="${a.sample_image || DEFAULT_ARTIST_IMG}" onerror="this.onerror=null; this.src='${DEFAULT_ARTIST_IMG}';" class="artist-avatar" alt="${a.artist_name}">
       <span class="artist-name">${a.artist_name}</span>
       <span class="artist-stats">${a.total_streams} lượt nghe</span>
     `;
@@ -159,7 +183,7 @@ function renderTopTracksTable(tracks) {
       <td><span class="rank-badge ${rankClass}">#${idx + 1}</span></td>
       <td>
         <div class="table-track-cell">
-          <img src="${t.image_url || 'https://via.placeholder.com/64'}" class="table-thumb" alt="${t.track_name}">
+          <img src="${t.image_url || DEFAULT_TRACK_IMG}" onerror="this.onerror=null; this.src='${DEFAULT_TRACK_IMG}';" class="table-thumb" alt="${t.track_name}">
           <div>
             <div style="font-weight: 700; color: #fff;">${t.track_name}</div>
             <div style="font-size: 12px; color: var(--text-secondary);">${t.artist_names}</div>
@@ -193,7 +217,7 @@ function renderTopArtistsGrid(artists) {
     card.onclick = () => filterByArtist(a.artist_name);
 
     card.innerHTML = `
-      <img src="${a.sample_image || 'https://via.placeholder.com/150'}" class="artist-avatar" alt="${a.artist_name}">
+      <img src="${a.sample_image || DEFAULT_ARTIST_IMG}" onerror="this.onerror=null; this.src='${DEFAULT_ARTIST_IMG}';" class="artist-avatar" alt="${a.artist_name}">
       <span class="artist-name">#${idx + 1} ${a.artist_name}</span>
       <span class="artist-stats" style="color: var(--spotify-green); font-weight: 700;">${a.total_streams} lượt nghe</span>
       <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">${a.total_minutes} phút</span>
@@ -264,7 +288,7 @@ function renderRecentStreams(recentStreams) {
     });
 
     row.innerHTML = `
-      <img src="${s.image_url || 'https://via.placeholder.com/64'}" class="track-row-img" alt="${s.track_name}">
+      <img src="${s.image_url || DEFAULT_TRACK_IMG}" onerror="this.onerror=null; this.src='${DEFAULT_TRACK_IMG}';" class="track-row-img" alt="${s.track_name}">
       <div class="track-row-info">
         <div class="track-row-title">${s.track_name}</div>
         <div class="track-row-meta">${s.artist_names} • ${s.album_name}</div>
@@ -282,6 +306,8 @@ function renderRecentStreams(recentStreams) {
 // 8. SEARCH MODULE
 // ==============================================================================
 
+let currentSearchFilter = "all";
+
 function initSearch() {
   const searchInput = document.getElementById("global-search-input");
 
@@ -290,26 +316,35 @@ function initSearch() {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
       e.preventDefault();
       searchInput.focus();
-      switchTab("search");
     }
   });
 
-  searchInput.addEventListener("input", (e) => {
-    const q = e.target.value.trim();
+  searchInput.addEventListener("input", () => {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => {
-      performSearch(q);
+      performSearch(searchInput.value.trim(), currentSearchFilter);
     }, 200);
   });
 
   searchInput.addEventListener("focus", () => {
     switchTab("search");
   });
+
+  // Filter Pills (Tất Cả, Đã Nghe, Gợi Ý Chưa Nghe)
+  const pills = document.querySelectorAll(".filter-pill");
+  pills.forEach(pill => {
+    pill.addEventListener("click", () => {
+      pills.forEach(p => p.classList.remove("active"));
+      pill.classList.add("active");
+      currentSearchFilter = pill.getAttribute("data-filter") || "all";
+      performSearch(searchInput.value.trim(), currentSearchFilter);
+    });
+  });
 }
 
-async function performSearch(query) {
+async function performSearch(query, filter = currentSearchFilter) {
   try {
-    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&filter=${encodeURIComponent(filter)}`);
     const results = await res.json();
 
     const tracks = results.matched_tracks || [];
@@ -322,21 +357,26 @@ async function performSearch(query) {
     const tracksContainer = document.getElementById("search-tracks-list");
     tracksContainer.innerHTML = "";
     if (tracks.length === 0) {
-      tracksContainer.innerHTML = "<p style='color: var(--text-muted); padding: 12px;'>Không tìm thấy bài hát nào.</p>";
+      tracksContainer.innerHTML = "<p style='color: var(--text-muted); padding: 12px;'>Không tìm thấy bài hát nào phù hợp.</p>";
     } else {
       tracks.forEach(t => {
         const row = document.createElement("div");
         row.className = "track-row";
         row.onclick = () => updatePlayerBar(t);
+
+        const statusTag = t.is_listened
+          ? `<span class="track-tag heard">✔️ Đã nghe (${t.total_streams || 1} lần)</span>`
+          : `<span class="track-tag unheard">✨ Gợi ý chưa nghe</span>`;
+
         row.innerHTML = `
-          <img src="${t.image_url || 'https://via.placeholder.com/64'}" class="track-row-img" alt="${t.track_name}">
+          <img src="${t.image_url || DEFAULT_TRACK_IMG}" onerror="this.onerror=null; this.src='${DEFAULT_TRACK_IMG}';" class="track-row-img" alt="${t.track_name}">
           <div class="track-row-info">
             <div class="track-row-title">${t.track_name}</div>
             <div class="track-row-meta">${t.artist_names} • ${t.album_name}</div>
           </div>
-          <div class="track-row-stats">
-            <span class="track-row-count">${t.total_streams} lượt</span>
-            <span class="track-row-time">${t.total_minutes} phút</span>
+          <div class="track-row-stats" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+            ${statusTag}
+            <span class="track-row-time">${t.total_minutes ? t.total_minutes + ' phút' : Math.round((t.duration_ms || 180000)/60000) + ' phút'}</span>
           </div>
         `;
         tracksContainer.appendChild(row);
@@ -354,7 +394,7 @@ async function performSearch(query) {
         row.className = "track-row";
         row.onclick = () => filterByArtist(a.artist_name);
         row.innerHTML = `
-          <img src="${a.sample_image || 'https://via.placeholder.com/64'}" class="track-row-img" style="border-radius: 50%;" alt="${a.artist_name}">
+          <img src="${a.sample_image || DEFAULT_ARTIST_IMG}" onerror="this.onerror=null; this.src='${DEFAULT_ARTIST_IMG}';" class="track-row-img" style="border-radius: 50%;" alt="${a.artist_name}">
           <div class="track-row-info">
             <div class="track-row-title">${a.artist_name}</div>
             <div class="track-row-meta">Đã nghe ${a.total_streams} bài • ${a.total_minutes} phút</div>
@@ -372,7 +412,7 @@ function filterByArtist(artistName) {
   const searchInput = document.getElementById("global-search-input");
   searchInput.value = artistName;
   switchTab("search");
-  performSearch(artistName);
+  performSearch(artistName, currentSearchFilter);
 }
 
 // ==============================================================================
@@ -385,8 +425,10 @@ function updatePlayerBar(track) {
   document.getElementById("player-artist").textContent = track.artist_names || "Unknown Artist";
   document.getElementById("player-status").textContent = `Đã nghe ${track.total_streams || 1} lần (${track.total_minutes || Math.round(track.duration_ms / 60000)} phút)`;
   
-  if (track.image_url) {
-    document.getElementById("player-img").src = track.image_url;
+  const playerImg = document.getElementById("player-img");
+  if (playerImg) {
+    playerImg.src = track.image_url || DEFAULT_TRACK_IMG;
+    playerImg.onerror = () => { playerImg.src = DEFAULT_TRACK_IMG; };
   }
 
   const linkBtn = document.getElementById("player-spotify-link");
@@ -404,24 +446,206 @@ function updatePlayerBar(track) {
 
 function initSync() {
   const btnSync = document.getElementById("btn-sync");
-  btnSync.addEventListener("click", async () => {
-    btnSync.classList.add("loading");
-    btnSync.querySelector("span").textContent = "Đang đồng bộ...";
+  if (btnSync) {
+    btnSync.addEventListener("click", async () => {
+      btnSync.classList.add("loading");
+      btnSync.querySelector("span").textContent = "Đang đồng bộ...";
 
-    try {
-      const res = await fetch("/api/sync", { method: "POST" });
-      const result = await res.json();
-      if (result.success) {
-        alert("🎉 Đồng bộ dữ liệu Spotify thành công!");
-        await fetchAnalyticsData();
-      } else {
-        alert("⚠️ Đồng bộ thất bại: " + (result.error || "Kiểm tra kết nối Spotify"));
+      try {
+        const res = await fetch("/api/sync", { method: "POST" });
+        const result = await res.json();
+        if (result.success) {
+          alert("🎉 Đồng bộ dữ liệu Spotify thành công!");
+          await fetchAnalyticsData();
+        } else {
+          alert("⚠️ Đồng bộ thất bại: " + (result.error || "Kiểm tra kết nối Spotify"));
+        }
+      } catch (err) {
+        alert("❌ Lỗi gọi API đồng bộ: " + err);
+      } finally {
+        btnSync.classList.remove("loading");
+        btnSync.querySelector("span").textContent = "Đồng Bộ Spotify";
       }
-    } catch (err) {
-      alert("❌ Lỗi gọi API đồng bộ: " + err);
-    } finally {
-      btnSync.classList.remove("loading");
-      btnSync.querySelector("span").textContent = "Đồng Bộ Ngay";
+    });
+  }
+
+  const btnRefreshLakehouse = document.getElementById("btn-refresh-lakehouse");
+  if (btnRefreshLakehouse) {
+    btnRefreshLakehouse.addEventListener("click", async () => {
+      btnRefreshLakehouse.classList.add("loading");
+      btnRefreshLakehouse.querySelector("span").textContent = "Đang tải...";
+      try {
+        const res = await fetch("/api/refresh-lakehouse", { method: "POST" });
+        if (res.ok) {
+          await fetchAnalyticsData();
+        }
+      } catch (err) {
+        console.error("Lỗi làm mới Lakehouse:", err);
+      } finally {
+        btnRefreshLakehouse.classList.remove("loading");
+        btnRefreshLakehouse.querySelector("span").textContent = "Làm Mới Lakehouse";
+      }
+    });
+  }
+}
+
+// ==============================================================================
+// 11. DISCOVERY & UNHEARD GEMS & ALBUM TRACKER
+// ==============================================================================
+
+function renderDiscovery(albums, recommendations) {
+  // 1. Unheard Gems Carousel
+  const gemsCount = document.getElementById("unheard-gems-count");
+  if (gemsCount) gemsCount.textContent = `${recommendations.length} bài gợi ý`;
+
+  const gemsContainer = document.getElementById("unheard-gems-list");
+  if (gemsContainer) {
+    gemsContainer.innerHTML = "";
+    if (!recommendations || recommendations.length === 0) {
+      gemsContainer.innerHTML = "<p style='color: var(--text-muted); padding: 16px;'>Bạn đã nghe hết tất cả bài hát trong các album được cào!</p>";
+    } else {
+      // Hiển thị tối đa 30 bài gợi ý ưu tiên
+      recommendations.slice(0, 30).forEach(item => {
+        const card = document.createElement("div");
+        card.className = "unheard-gem-card";
+        card.onclick = () => updatePlayerBar(item);
+
+        card.innerHTML = `
+          <div class="unheard-gem-cover-wrap">
+            <img src="${item.image_url || DEFAULT_TRACK_IMG}" onerror="this.onerror=null; this.src='${DEFAULT_TRACK_IMG}';" class="unheard-gem-cover" alt="${item.track_name}">
+            <span class="badge-gem-tag">✨ Gợi ý</span>
+            <div class="gem-play-btn" title="Xem bài hát">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          </div>
+          <div class="unheard-gem-title" title="${item.track_name}">${item.track_name}</div>
+          <div class="unheard-gem-artist" title="${item.artist_names}">${item.artist_names}</div>
+          <div class="unheard-gem-album" title="${item.album_name}">${item.album_name}</div>
+        `;
+        gemsContainer.appendChild(card);
+      });
+    }
+  }
+
+  // 2. Album Completion Tracker Grid
+  const albumsCount = document.getElementById("albums-tracker-count");
+  if (albumsCount) albumsCount.textContent = `${albums.length} album`;
+
+  const albumsContainer = document.getElementById("albums-tracker-grid");
+  if (albumsContainer) {
+    albumsContainer.innerHTML = "";
+    if (!albums || albums.length === 0) {
+      albumsContainer.innerHTML = "<p style='color: var(--text-muted); padding: 16px;'>Chưa có dữ liệu catalog album.</p>";
+    } else {
+      albums.forEach(album => {
+        const card = document.createElement("div");
+        card.className = "album-tracker-card";
+        card.onclick = () => openAlbumModal(album);
+
+        const rate = album.completion_rate || 0;
+        const fillClass = rate >= 100 ? "complete" : (rate >= 50 ? "high" : "");
+        const year = album.release_date ? album.release_date.split("-")[0] : "";
+
+        card.innerHTML = `
+          <div class="album-tracker-top">
+            <img src="${album.image_url || DEFAULT_TRACK_IMG}" onerror="this.onerror=null; this.src='${DEFAULT_TRACK_IMG}';" class="album-tracker-cover" alt="${album.album_name}">
+            <div class="album-tracker-info">
+              <div class="album-tracker-name" title="${album.album_name}">${album.album_name}</div>
+              <div class="album-tracker-artist" title="${album.artist_names}">${album.artist_names}</div>
+              <div class="album-tracker-meta">${year ? year + ' • ' : ''}${album.total_tracks} bài hát (${album.album_type})</div>
+            </div>
+          </div>
+          <div class="album-tracker-progress">
+            <div class="album-progress-label">
+              <span class="album-progress-text">Đã nghe: ${album.tracks_listened}/${album.total_tracks} bài</span>
+              <span class="album-progress-rate">${rate}%</span>
+            </div>
+            <div class="album-progress-bar">
+              <div class="album-progress-fill ${fillClass}" style="width: ${rate}%;"></div>
+            </div>
+          </div>
+        `;
+        albumsContainer.appendChild(card);
+      });
+    }
+  }
+}
+
+// ==============================================================================
+// 12. ALBUM TRACKLIST MODAL CONTROLLER
+// ==============================================================================
+
+function initAlbumModal() {
+  const modal = document.getElementById("album-modal");
+  const closeBtn = document.getElementById("modal-close-btn");
+
+  if (!modal) return;
+
+  if (closeBtn) {
+    closeBtn.onclick = () => { modal.style.display = "none"; };
+  }
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.style.display = "none";
+    }
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.style.display !== "none") {
+      modal.style.display = "none";
     }
   });
 }
+
+function openAlbumModal(album) {
+  const modal = document.getElementById("album-modal");
+  if (!modal || !album) return;
+
+  const imgEl = document.getElementById("modal-album-img");
+  imgEl.src = album.image_url || DEFAULT_TRACK_IMG;
+  imgEl.onerror = () => { imgEl.src = DEFAULT_TRACK_IMG; };
+
+  document.getElementById("modal-album-title").textContent = album.album_name;
+  document.getElementById("modal-album-artist").textContent = album.artist_names;
+  document.getElementById("modal-album-type").textContent = (album.album_type || "ALBUM").toUpperCase();
+
+  const rate = album.completion_rate || 0;
+  document.getElementById("modal-progress-fill").style.width = `${rate}%`;
+  document.getElementById("modal-progress-text").textContent = `Đã nghe ${album.tracks_listened}/${album.total_tracks} bài (${rate}%)`;
+
+  const tracklistEl = document.getElementById("modal-tracklist");
+  tracklistEl.innerHTML = "";
+
+  (album.tracklist || []).forEach(tr => {
+    const row = document.createElement("div");
+    row.className = `modal-track-row ${tr.is_listened ? '' : 'unheard-row'}`;
+    row.onclick = () => updatePlayerBar(tr);
+
+    const durMins = Math.floor(tr.duration_ms / 60000);
+    const durSecs = Math.floor((tr.duration_ms % 60000) / 1000).toString().padStart(2, "0");
+    const durStr = `${durMins}:${durSecs}`;
+
+    const tag = tr.is_listened
+      ? `<span class="track-tag heard">✔️ Đã nghe</span>`
+      : `<span class="track-tag unheard">✨ Chưa nghe</span>`;
+
+    row.innerHTML = `
+      <div class="modal-track-left">
+        <span class="modal-track-num">${tr.track_number}</span>
+        <div class="modal-track-details">
+          <div class="modal-track-name">${tr.track_name}</div>
+          <div class="modal-track-artists">${tr.artist_names}</div>
+        </div>
+      </div>
+      <div class="modal-track-right">
+        ${tag}
+        <span class="modal-track-dur">${durStr}</span>
+      </div>
+    `;
+    tracklistEl.appendChild(row);
+  });
+
+  modal.style.display = "flex";
+}
+
