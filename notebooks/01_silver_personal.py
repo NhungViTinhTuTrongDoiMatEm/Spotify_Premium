@@ -11,9 +11,6 @@ from delta.tables import DeltaTable
 # 1. Thiết lập Database Schema cho tầng Silver
 spark.sql("CREATE DATABASE IF NOT EXISTS spotify_silver")
 
-# Bật tính năng tự động nâng cấp Schema cho Delta Table (Schema Evolution)
-spark.sql("SET spark.databricks.delta.schema.autoMerge.enabled = true")
-
 # 2. Đọc toàn bộ file JSON thô Bronze từ Workspace Files hoặc DBFS
 try:
     bronze_path = "/Workspace/spotify_raw/personal_*.json"
